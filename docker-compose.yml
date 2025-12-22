@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: taskflow-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: taskflow
+      MYSQL_USER: taskflow_user
+      MYSQL_PASSWORD: taskflow_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: taskflow-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  core-api:
+    build:
+      context: ./core
+      dockerfile: Dockerfile
+    container_name: taskflow-core
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=taskflow;User=taskflow_user;Password=taskflow_pass;"
+      Redis__ConnectionString: "redis:6379"
+    ports:
+      - "5000:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./core:/app
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: taskflow-gateway
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      CORE_API_URL: http://core-api:8080
+      JWT_SECRET: your-secret-key-change-in-production
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "4000:4000"
+    depends_on:
+      - core-api
+      - redis
+    volumes:
+      - ./gateway:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: taskflow-client
+    environment:
+      REACT_APP_GATEWAY_URL: http://localhost:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gateway
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  redis_data:

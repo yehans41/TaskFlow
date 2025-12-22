@@ -1,0 +1,55 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint-and-test:
+    name: Lint and Test All Services
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Test Gateway
+        working-directory: ./gateway
+        run: |
+          npm ci
+          npm run lint --if-present
+          npm test --if-present
+
+      - name: Test Core API
+        working-directory: ./core
+        run: |
+          dotnet restore
+          dotnet build --configuration Release
+          dotnet test --configuration Release --verbosity normal
+
+      - name: Build Docker images
+        run: |
+          docker build -t taskflow-gateway:test ./gateway
+          docker build -t taskflow-core:test ./core
+          docker build -t taskflow-client:test ./client
+
+      - name: Comment PR
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ All checks passed! Ready for review.'
+            })

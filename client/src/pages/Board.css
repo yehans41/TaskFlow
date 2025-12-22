@@ -1,0 +1,98 @@
+.board-page {
+  min-height: 100vh;
+  background-color: #0079bf;
+}
+
+.board-content {
+  padding: 20px;
+  overflow-x: auto;
+  height: calc(100vh - 60px);
+}
+
+.lists-container {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.list {
+  background-color: #ebecf0;
+  border-radius: 8px;
+  min-width: 280px;
+  max-width: 280px;
+  padding: 10px;
+}
+
+.list-header {
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.list-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  background-color: white;
+  border-radius: 6px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.card:hover {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.card h4 {
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.card p {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+}
+
+.add-card-btn {
+  background-color: transparent;
+  color: #5e6c84;
+  padding: 8px;
+  text-align: left;
+  font-size: 14px;
+}
+
+.add-card-btn:hover {
+  background-color: rgba(0,0,0,0.1);
+}
+
+.add-list {
+  background-color: rgba(255,255,255,0.24);
+  border-radius: 8px;
+  min-width: 280px;
+  padding: 10px;
+}
+
+.add-list button {
+  width: 100%;
+  background-color: transparent;
+  color: white;
+  padding: 12px;
+  text-align: left;
+  font-size: 14px;
+}
+
+.add-list button:hover {
+  background-color: rgba(255,255,255,0.1);
+}
