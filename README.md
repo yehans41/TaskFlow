@@ -73,7 +73,7 @@ A cloud-native task management platform built with React, Node.js, and .NET - A 
 
 ```bash
 # Clone and start all services
-git clone <your-repo-url>
+git clone https://github.com/yehans41/TaskFlow.git
 cd TaskFlow
 docker-compose up
 
