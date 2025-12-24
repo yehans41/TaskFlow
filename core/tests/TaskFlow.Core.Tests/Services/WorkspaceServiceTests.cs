@@ -45,7 +45,7 @@ public class WorkspaceServiceTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal(2, result.Count());
-        _mockCache.Verify(c => c.SetAsync(It.IsAny<string>(), workspaces, It.IsAny<TimeSpan>()), Times.Once);
+        _mockCache.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<IEnumerable<Workspace>>(), It.IsAny<TimeSpan>()), Times.Once);
     }
 
     [Fact]
