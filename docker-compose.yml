@@ -41,14 +41,12 @@ services:
       ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=taskflow;User=taskflow_user;Password=taskflow_pass;"
       Redis__ConnectionString: "redis:6379"
     ports:
-      - "5000:8080"
+      - "5001:8080"
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./core:/app
     restart: unless-stopped
 
   gateway:
@@ -67,9 +65,6 @@ services:
     depends_on:
       - core-api
       - redis
-    volumes:
-      - ./gateway:/app
-      - /app/node_modules
     restart: unless-stopped
 
   client:
@@ -83,9 +78,6 @@ services:
       - "3000:3000"
     depends_on:
       - gateway
-    volumes:
-      - ./client:/app
-      - /app/node_modules
     stdin_open: true
     tty: true
     restart: unless-stopped

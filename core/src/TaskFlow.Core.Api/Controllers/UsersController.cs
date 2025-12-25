@@ -35,4 +35,14 @@ public class UsersController : ControllerBase
 
         return user;
     }
+
+    [HttpGet("email/{email}")]
+    public async Task<ActionResult<User>> GetUserByEmail(string email)
+    {
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user == null)
+            return NotFound();
+
+        return user;
+    }
 }

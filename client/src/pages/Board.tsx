@@ -23,13 +23,19 @@ const Board = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [boardName, setBoardName] = useState('');
+  const [boardDescription, setBoardDescription] = useState('');
   const [lists, setLists] = useState<List[]>([]);
   const [showListModal, setShowListModal] = useState(false);
   const [showCardModal, setShowCardModal] = useState(false);
+  const [showEditCardModal, setShowEditCardModal] = useState(false);
+  const [showEditBoardModal, setShowEditBoardModal] = useState(false);
   const [selectedListId, setSelectedListId] = useState<number | null>(null);
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [newListName, setNewListName] = useState('');
   const [newCardTitle, setNewCardTitle] = useState('');
   const [newCardDescription, setNewCardDescription] = useState('');
+  const [editBoardName, setEditBoardName] = useState('');
+  const [editBoardDescription, setEditBoardDescription] = useState('');
 
   useEffect(() => {
     fetchBoard();
@@ -40,8 +46,64 @@ const Board = () => {
     try {
       const response = await axios.get(`${API_URL}/api/tasks/boards/${id}`);
       setBoardName(response.data.name);
+      setBoardDescription(response.data.description || '');
     } catch (error) {
       console.error('Failed to fetch board:', error);
+    }
+  };
+
+  const openEditBoardModal = () => {
+    setEditBoardName(boardName);
+    setEditBoardDescription(boardDescription);
+    setShowEditBoardModal(true);
+  };
+
+  const updateBoard = async () => {
+    try {
+      await axios.put(`${API_URL}/api/tasks/boards/${id}`, {
+        name: editBoardName,
+        description: editBoardDescription
+      });
+      setShowEditBoardModal(false);
+      fetchBoard();
+    } catch (error: any) {
+      console.error('Failed to update board:', error);
+      alert(`Failed to update board: ${error.response?.data?.error || error.message}`);
+    }
+  };
+
+  const openEditCardModal = (card: Card) => {
+    setSelectedCard(card);
+    setNewCardTitle(card.title);
+    setNewCardDescription(card.description);
+    setShowEditCardModal(true);
+  };
+
+  const updateCard = async () => {
+    if (!selectedCard) return;
+    try {
+      // Find the list that contains this card to get the listId
+      const list = lists.find(l => l.cards.some(c => c.id === selectedCard.id));
+      if (!list) {
+        alert('Could not find the list for this card');
+        return;
+      }
+
+      await axios.put(`${API_URL}/api/tasks/cards/${selectedCard.id}`, {
+        title: newCardTitle,
+        description: newCardDescription,
+        position: selectedCard.position,
+        listId: list.id,
+        priority: 'medium'
+      });
+      setShowEditCardModal(false);
+      setSelectedCard(null);
+      setNewCardTitle('');
+      setNewCardDescription('');
+      fetchLists();
+    } catch (error: any) {
+      console.error('Failed to update card:', error);
+      alert(`Failed to update card: ${error.response?.data?.error || error.message}`);
     }
   };
 
@@ -99,12 +161,41 @@ const Board = () => {
     setShowCardModal(true);
   };
 
+  const deleteList = async (listId: number) => {
+    if (!window.confirm('Are you sure you want to delete this list? All cards will be lost.')) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API_URL}/api/tasks/lists/${listId}`);
+      fetchLists();
+    } catch (error: any) {
+      console.error('Failed to delete list:', error);
+      alert(`Failed to delete list: ${error.response?.data?.error || error.message}`);
+    }
+  };
+
+  const deleteCard = async (cardId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this card?')) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API_URL}/api/tasks/cards/${cardId}`);
+      fetchLists();
+    } catch (error: any) {
+      console.error('Failed to delete card:', error);
+      alert(`Failed to delete card: ${error.response?.data?.error || error.message}`);
+    }
+  };
+
   return (
     <div className="board-page">
       <nav className="navbar">
         <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
           <button onClick={() => navigate('/')}>← Back</button>
-          <h1>{boardName}</h1>
+          <h1 onClick={openEditBoardModal} style={{ cursor: 'pointer' }} title="Click to edit">{boardName}</h1>
         </div>
       </nav>
 
@@ -114,12 +205,44 @@ const Board = () => {
             <div key={list.id} className="list">
               <div className="list-header">
                 <h3>{list.name}</h3>
+                <button
+                  onClick={() => deleteList(list.id)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    color: '#dc3545',
+                    padding: '2px 4px'
+                  }}
+                  title="Delete list"
+                >
+                  🗑️
+                </button>
               </div>
               <div className="cards-container">
                 {list.cards.map(card => (
-                  <div key={card.id} className="card">
-                    <h4>{card.title}</h4>
-                    {card.description && <p>{card.description}</p>}
+                  <div key={card.id} className="card" onClick={() => openEditCardModal(card)} style={{ cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                      <div style={{ flex: 1 }}>
+                        <h4>{card.title}</h4>
+                        {card.description && <p>{card.description}</p>}
+                      </div>
+                      <button
+                        onClick={(e) => deleteCard(card.id, e)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          color: '#dc3545',
+                          padding: '2px 4px'
+                        }}
+                        title="Delete card"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
                 ))}
                 <button className="add-card-btn" onClick={() => openCardModal(list.id)}>
@@ -171,6 +294,54 @@ const Board = () => {
             <div className="modal-actions">
               <button onClick={() => setShowCardModal(false)}>Cancel</button>
               <button className="btn-primary" onClick={createCard}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditCardModal && (
+        <div className="modal-overlay" onClick={() => setShowEditCardModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Edit Card</h3>
+            <input
+              type="text"
+              placeholder="Card title"
+              value={newCardTitle}
+              onChange={(e) => setNewCardTitle(e.target.value)}
+            />
+            <textarea
+              placeholder="Card description"
+              value={newCardDescription}
+              onChange={(e) => setNewCardDescription(e.target.value)}
+              rows={4}
+            />
+            <div className="modal-actions">
+              <button onClick={() => setShowEditCardModal(false)}>Cancel</button>
+              <button className="btn-primary" onClick={updateCard}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditBoardModal && (
+        <div className="modal-overlay" onClick={() => setShowEditBoardModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Edit Board</h3>
+            <input
+              type="text"
+              placeholder="Board name"
+              value={editBoardName}
+              onChange={(e) => setEditBoardName(e.target.value)}
+            />
+            <textarea
+              placeholder="Board description (optional)"
+              value={editBoardDescription}
+              onChange={(e) => setEditBoardDescription(e.target.value)}
+              rows={4}
+            />
+            <div className="modal-actions">
+              <button onClick={() => setShowEditBoardModal(false)}>Cancel</button>
+              <button className="btn-primary" onClick={updateBoard}>Save</button>
             </div>
           </div>
         </div>

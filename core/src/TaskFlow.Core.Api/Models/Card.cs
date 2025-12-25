@@ -13,5 +13,5 @@ public class Card
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
-    public List List { get; set; } = null!;
+    public List? List { get; set; }
 }

@@ -16,6 +16,7 @@ interface Board {
   id: number;
   name: string;
   description: string;
+  workspaceId?: number;
 }
 
 const Dashboard = () => {
@@ -26,8 +27,12 @@ const Dashboard = () => {
   const [boards, setBoards] = useState<Board[]>([]);
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
   const [showBoardModal, setShowBoardModal] = useState(false);
+  const [showEditBoardModal, setShowEditBoardModal] = useState(false);
+  const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [newBoardName, setNewBoardName] = useState('');
+  const [editBoardName, setEditBoardName] = useState('');
+  const [editBoardDescription, setEditBoardDescription] = useState('');
 
   useEffect(() => {
     fetchWorkspaces();
@@ -61,6 +66,11 @@ const Dashboard = () => {
   };
 
   const createWorkspace = async () => {
+    if (!newWorkspaceName.trim()) {
+      alert('Please enter a workspace name');
+      return;
+    }
+
     try {
       await axios.post(`${API_URL}/api/tasks/workspaces`, {
         name: newWorkspaceName,
@@ -69,13 +79,20 @@ const Dashboard = () => {
       setNewWorkspaceName('');
       setShowWorkspaceModal(false);
       fetchWorkspaces();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create workspace:', error);
+      alert(`Failed to create workspace: ${error.response?.data?.error || error.message}`);
     }
   };
 
   const createBoard = async () => {
     if (!selectedWorkspace) return;
+
+    if (!newBoardName.trim()) {
+      alert('Please enter a board name');
+      return;
+    }
+
     try {
       await axios.post(`${API_URL}/api/tasks/workspaces/${selectedWorkspace}/boards`, {
         name: newBoardName,
@@ -84,8 +101,72 @@ const Dashboard = () => {
       setNewBoardName('');
       setShowBoardModal(false);
       fetchBoards(selectedWorkspace);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create board:', error);
+      alert(`Failed to create board: ${error.response?.data?.error || error.message}`);
+    }
+  };
+
+  const openEditBoardModal = (board: Board, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent navigating to the board
+    setSelectedBoard(board);
+    setEditBoardName(board.name);
+    setEditBoardDescription(board.description);
+    setShowEditBoardModal(true);
+  };
+
+  const updateBoard = async () => {
+    if (!selectedBoard || !selectedWorkspace) return;
+
+    try {
+      await axios.put(`${API_URL}/api/tasks/boards/${selectedBoard.id}`, {
+        name: editBoardName,
+        description: editBoardDescription,
+        workspaceId: selectedWorkspace
+      });
+      setShowEditBoardModal(false);
+      setSelectedBoard(null);
+      setEditBoardName('');
+      setEditBoardDescription('');
+      fetchBoards(selectedWorkspace);
+    } catch (error: any) {
+      console.error('Failed to update board:', error);
+      alert(`Failed to update board: ${error.response?.data?.error || error.message}`);
+    }
+  };
+
+  const deleteBoard = async (boardId: number) => {
+    if (!window.confirm('Are you sure you want to delete this board? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API_URL}/api/tasks/boards/${boardId}`);
+      if (selectedWorkspace) {
+        fetchBoards(selectedWorkspace);
+      }
+    } catch (error: any) {
+      console.error('Failed to delete board:', error);
+      alert(`Failed to delete board: ${error.response?.data?.error || error.message}`);
+    }
+  };
+
+  const deleteWorkspace = async (workspaceId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this workspace? All boards and data will be lost.')) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API_URL}/api/tasks/workspaces/${workspaceId}`);
+      fetchWorkspaces();
+      if (selectedWorkspace === workspaceId) {
+        setSelectedWorkspace(null);
+        setBoards([]);
+      }
+    } catch (error: any) {
+      console.error('Failed to delete workspace:', error);
+      alert(`Failed to delete workspace: ${error.response?.data?.error || error.message}`);
     }
   };
 
@@ -112,7 +193,21 @@ const Dashboard = () => {
                 className={`workspace-item ${selectedWorkspace === workspace.id ? 'active' : ''}`}
                 onClick={() => setSelectedWorkspace(workspace.id)}
               >
-                {workspace.name}
+                <span>{workspace.name}</span>
+                <button
+                  onClick={(e) => deleteWorkspace(workspace.id, e)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    color: '#dc3545',
+                    padding: '2px 4px'
+                  }}
+                  title="Delete workspace"
+                >
+                  🗑️
+                </button>
               </div>
             ))}
           </div>
@@ -132,7 +227,41 @@ const Dashboard = () => {
                 className="board-card"
                 onClick={() => navigate(`/board/${board.id}`)}
               >
-                <h3>{board.name}</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                  <h3>{board.name}</h3>
+                  <div>
+                    <button
+                      onClick={(e) => openEditBoardModal(board, e)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        padding: '4px 8px'
+                      }}
+                      title="Edit board"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteBoard(board.id);
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        padding: '4px 8px',
+                        color: '#dc3545'
+                      }}
+                      title="Delete board"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
                 <p>{board.description || 'No description'}</p>
               </div>
             ))}
@@ -171,6 +300,30 @@ const Dashboard = () => {
             <div className="modal-actions">
               <button onClick={() => setShowBoardModal(false)}>Cancel</button>
               <button className="btn-primary" onClick={createBoard}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditBoardModal && (
+        <div className="modal-overlay" onClick={() => setShowEditBoardModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Edit Board</h3>
+            <input
+              type="text"
+              placeholder="Board name"
+              value={editBoardName}
+              onChange={(e) => setEditBoardName(e.target.value)}
+            />
+            <textarea
+              placeholder="Board description (optional)"
+              value={editBoardDescription}
+              onChange={(e) => setEditBoardDescription(e.target.value)}
+              rows={4}
+            />
+            <div className="modal-actions">
+              <button onClick={() => setShowEditBoardModal(false)}>Cancel</button>
+              <button className="btn-primary" onClick={updateBoard}>Save</button>
             </div>
           </div>
         </div>

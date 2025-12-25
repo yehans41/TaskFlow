@@ -1,3 +1,4 @@
+using System;
 using Microsoft.EntityFrameworkCore;
 using TaskFlow.Core.Api.Data;
 using TaskFlow.Core.Api.Models;
@@ -38,10 +39,16 @@ public class BoardRepository : IBoardRepository
 
     public async Task<Board> UpdateAsync(Board board)
     {
-        board.UpdatedAt = DateTime.UtcNow;
-        _context.Boards.Update(board);
+        var existingBoard = await _context.Boards.FindAsync(board.Id);
+        if (existingBoard == null)
+            throw new InvalidOperationException($"Board with ID {board.Id} not found");
+
+        existingBoard.Name = board.Name;
+        existingBoard.Description = board.Description;
+        existingBoard.UpdatedAt = DateTime.UtcNow;
+
         await _context.SaveChangesAsync();
-        return board;
+        return existingBoard;
     }
 
     public async Task DeleteAsync(int id)

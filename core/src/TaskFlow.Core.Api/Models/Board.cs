@@ -10,6 +10,6 @@ public class Board
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
-    public Workspace Workspace { get; set; } = null!;
+    public Workspace? Workspace { get; set; }
     public ICollection<List> Lists { get; set; } = new List<List>();
 }

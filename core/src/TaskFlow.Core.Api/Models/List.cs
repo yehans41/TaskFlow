@@ -10,6 +10,6 @@ public class List
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
-    public Board Board { get; set; } = null!;
+    public Board? Board { get; set; }
     public ICollection<Card> Cards { get; set; } = new List<Card>();
 }
