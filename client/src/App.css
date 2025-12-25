@@ -3,32 +3,42 @@
 }
 
 .navbar {
-  background-color: #026aa7;
+  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
   color: white;
-  padding: 12px 20px;
+  padding: 16px 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .navbar h1 {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: white;
 }
 
 .navbar-actions {
   display: flex;
-  gap: 10px;
+  gap: 16px;
   align-items: center;
 }
 
+.navbar-actions span {
+  font-weight: 500;
+  opacity: 0.95;
+}
+
 .navbar button {
-  background-color: rgba(255,255,255,0.2);
+  background-color: rgba(255, 255, 255, 0.2);
   color: white;
-  padding: 8px 16px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .navbar button:hover {
-  background-color: rgba(255,255,255,0.3);
+  background-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.4);
 }
